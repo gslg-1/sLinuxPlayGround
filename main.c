@@ -2,10 +2,13 @@
 /* System */
 #include <stdio.h>
 /* Project */
-/* Includes ------------------------------------------------ */
-/* Function Prototypes: */
-int main(char * args, int argc)
+
+/* Function Prototypes ------------------------------------- */
+int main(int argc, char ** args);
+
+/* Function Bodies -----------------------------------------  */
+int main(int argc, char ** args)
 {
-    printf("Hello World\n");
-    return 0;
+  printf("Hello World\n");
+  return 0;
 }
