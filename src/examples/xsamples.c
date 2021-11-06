@@ -12,7 +12,6 @@
 
 /* Project includes */
 
-
 int xsample1_run(void)
 {
     inquiry_info *ii = NULL;

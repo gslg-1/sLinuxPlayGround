@@ -2,29 +2,35 @@
 TARGET = app
 
 # Paths 
-BUILDDIR = ./Build
+BUILDDIR = out
 RLSDIR = $(BUILDDIR)/release
 DBGDIR = $(BUILDDIR)/debug
 
+# Includes
+LIBS += -lbluetooth
+
 # Flags
-DBGFLAGS += -g -DDEBUG
-RLSFLAGS += -O3
-CFLAGS += -v -Wall
+LFLAGS += -Wl,-Map,$(DBGTARGET).map
+AFLAGS +=
+PFLAGS += 
+CFLAGS += -Wall -pedantic
+DBGFLAGS +=-g3
+RLSFLAGS +=-O3 -Werror 
 
 # Files
-SRCS = $(shell find ./ -type f -name *.c)
-OBJS = $(notdir $(SRCS:.c=.o))
+INCS = $(dir $(shell find . -type f -name *.h))
+SRCS = $(shell find . -type f -name *.c)
+PCCS = $(notdir $(SRCS:.c=.e))
+OBJS = $(notdir $(PCCS:.e=.o))
 
 # Target
+BAREOBJS = $(basename $(OBJS))
 DBGOBJS = $(addprefix $(DBGDIR)/,$(OBJS))
+DBGPCCS = $(addprefix $(DBGDIR)/,$(PCCS))
 RLSOBJS = $(addprefix $(RLSDIR)/,$(OBJS))
 DBGTARGET = $(DBGDIR)/$(TARGET)
 RLSTARGET = $(RLSDIR)/$(TARGET)
-LOGFILE = $(DBGDIR)/log
-LOG1FILE = $(DBGDIR)/log1
 
-# Includes
-#LIBS +=  Enable if needed
 
 # Cross Compler
 CC = gcc
@@ -33,43 +39,50 @@ all : release
 
 debug : $(DBGTARGET)
 
+test: 
+	@echo "Target:    $(DBGTARGET)"
+	@echo "DBG Objs:  $(DBGOBJS)"
+	@echo "SRC:       $(SRCS)"
+	@echo "INC:       $(INCS)"
+	@echo "-I$(INCS)"
+	@echo "OBJS:      $(OBJS)"
+	@echo "LIBS:      $(LIBS)"
+	@echo "Check" 		$(DBGDIR)/%.o
+	@echo "basename" 	$(BAREOBJS)
+
+
+$(DBGDIR)/%.e: $(SRCS)
+	@echo "Pre-process:" $^
+	mkdir -p $(DBGDIR)
+	$(CC) $(DBGFLAGS) -I$(INCS) $< -o $@ -E
+	
+%.s : $(SRCS)
+	@echo "Compile:" $^
+	mkdir -p $(DBGDIR)
+	$(CC) $(DBGFLAGS) $(LIBS) -I$(INCS) $< -o $@ -S $(CFLAGS)
+
+%.o : %.s
+	@echo "Asseble:" $^
+	$(CC) $(DBGFLAGS) $< -o $@ -c 
+
 $(DBGTARGET) : $(DBGOBJS)
-	@echo " #######################"
-	@echo " Debug Link Objects"
-	@echo " #######################"
-	$(CC) $(CFLAGS) $(DBGFLAGS) -o $(DBGTARGET) $^ 2 >>$(LOGFILE)
-	@cat $(LOGFILE)
-	@cat $(LOGFILE) | grep -i 'warning\|error\|note' >$(LOG1FILE) 
+	@echo "Link:" $^
+	$(CC) $(DBGFLAGS) $(LIBS) $^ -o $@ $(LFLAGS)
 
-$(DBGDIR)/%.o: %.c
-	@echo " #######################"
-	@echo " Debug Compile Objects"
-	@echo " #######################"
-	@mkdir -p $(DBGDIR)
-	@touch $(LOGFILE) $(LOG1FILE) 
-	@> $(LOGFILE)
-	@> $(LOG1FILE)
-	$(CC) -c $(CFLAGS) $(DBGFLAGS) -o $@ $< 2>> $(LOGFILE)
-
+	
 release : $(RLSDIR)/$(TARGET) 
 
 $(RLSTARGET): $(RLSOBJS)
-	@echo " #######################"
-	@echo " Release Link Objects:"
-	@echo " #######################"
-	$(CC) $(CFLAGS) $(RLSFLAGS) -o $(RLSTARGET) $^ 
+	@echo "\nRelease Link Objects:\n"
+	$(CC) $(CFLAGS) $(RLSFLAGS) $^ -o $@ 
 
-$(RLSDIR)/%.o : %.c
-	@echo " #######################"
-	@echo " Release Compile Objects"
-	@echo " #######################"
+$(RLSOBJS) : $(SRCS)
+	@echo "\nRelease Compile Objects\n"
 	@mkdir -p $(RLSDIR)
-	$(CC) -c $(CFLAGS) $(RLSFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) $(RLSFLAGS) $^ -o $@ 
 
 run : all
-	@echo " #######################"
-	@echo " Start Application"
-	@echo " #######################"
+	@echo "\nStart Application\n"
 	$(RLSTARGET)
 
 clean all:
